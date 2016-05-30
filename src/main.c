@@ -1,6 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include "masterserver.h"
+#include "../headers/masterserver.h"
 
 int main() {
 

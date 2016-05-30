@@ -7,7 +7,7 @@
 #include <arpa/inet.h>
 #include <stdio.h>
 #include <unistd.h>
-#include "masterserver.h"
+#include "../headers/masterserver.h"
 
 
 void master_server() {
