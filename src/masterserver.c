@@ -1,20 +1,14 @@
 //
 // Created by Timothy Friberg Holmsten on 29/05/16.
 //
-
-#include <sys/socket.h>
-#include <memory.h>
-#include <arpa/inet.h>
-#include <stdio.h>
-#include <unistd.h>
-#include <errno.h>
-#include <sys/wait.h>
-#include <signal.h>
-#include <stdlib.h>
 #include "headers/masterserver.h"
+
 
 void master_server() {
 
+    Server server_list[NR_OF_SERVERS];
+
+    init_servers(server_list, NR_OF_SERVERS);
     init_child_handler();
 
     int sockfd, clientfd;
@@ -43,8 +37,22 @@ void master_server() {
 
         if (clientfd != -1)
         {
-            printf("Client connected\n");
+            close(clientfd);
+            continue;
         }
+        printf("Client Connected!\n");
+
+        /*
+        switch (fork())
+        {
+            case -1:
+                printf("Could not create server\n");
+                exit(-1);
+
+            case 0:
+                printf("Server Created %d!\n", server_list[0].server_id);
+
+        }*/
 
         sleep(1);
         uint32_t info;
