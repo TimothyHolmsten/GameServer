@@ -7,7 +7,7 @@
 #include <arpa/inet.h>
 #include <stdio.h>
 #include <unistd.h>
-#include "../headers/masterserver.h"
+#include "headers/masterserver.h"
 
 
 void master_server() {
@@ -19,14 +19,14 @@ void master_server() {
 
     sockfd = socket(AF_INET, SOCK_STREAM, 0);
 
-    memset(self.sin_zero, '\0', sizeof(self.sin_zero));
+    memset(self.sin_zero, NULL, sizeof(self.sin_zero));
     self.sin_family = AF_INET;
     self.sin_port = htons(PORT);
-    self.sin_addr.s_addr = INADDR_ANY;
+    self.sin_addr.s_addr = inet_addr("127.0.0.1"); //INADDR_ANYf
 
     bind(sockfd, (struct sockaddr*)&self, sizeof(self));
 
-    listen(sockfd, 10);
+    listen(sockfd, 5);
 
     int running = 1;
 
@@ -38,8 +38,10 @@ void master_server() {
 
         if (clientfd != -1)
         {
-            printf("hej");
+            printf("Client connected!\n");
         }
+
+        sleep(1);
 
         close(clientfd);
     }

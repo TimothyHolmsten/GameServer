@@ -1,10 +1,10 @@
 #include <stdio.h>
-#include <stdlib.h>
-#include "../headers/masterserver.h"
+#include "headers/masterserver.h"
 
 int main() {
 
-    printf("Server started");
+
+    printf("Server Started!\n");
 
     master_server();
 
