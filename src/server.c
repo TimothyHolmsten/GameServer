@@ -4,7 +4,6 @@
 
 #include "headers/server.h"
 
-
 int create_server(Server data) {
     /*
     int sockfd, clientfd;
@@ -77,6 +76,26 @@ int calculate_best_server(Server *servers, int len) {
 
     return best_server;
 }
+
+void create_comm_threads(Server server) {
+    pthread_t r_thread;
+
+    ThreadServerComm reader;
+    reader.server = server;
+
+    pthread_create(&r_thread, NULL, thread_read_server, &reader);
+
+}
+
+void *thread_read_server(void *s) {
+
+
+    return NULL;
+}
+
+
+
+
 
 
 

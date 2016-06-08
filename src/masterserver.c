@@ -105,9 +105,9 @@ void update_server_list(Server *server_list, int len) {
     }
 }
 
-void *thread_read_server(void *s)
+void *thread_read_servers(void *s)
 {
-    Reader *reader = (Reader*) s;
+    ThreadComm *reader = (ThreadComm*) s;
 
     while(1) {
         for (int i = 0; i < reader->length; i++) {
@@ -128,18 +128,13 @@ void create_read_thread(Server *server_list, int len)
 {
     pthread_t r_thread;
 
-    Reader reader;
+    ThreadComm reader;
     reader.id = 1;
     reader.length = len;
 
     for (int i = 0; i < len; i++)
         reader.server_list[i] = server_list[i];
 
-    pthread_create(&r_thread, NULL, thread_read_server, &reader);
+    pthread_create(&r_thread, NULL, thread_read_servers, &reader);
 
 }
-
-
-
-
-

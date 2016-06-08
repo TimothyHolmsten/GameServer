@@ -29,12 +29,12 @@ void init_child_handler();
 void master_server();
 void update_server_list(Server *server_list, int len);
 
-typedef struct Reader{
+typedef struct ThreadComm{
     Server server_list[NR_OF_SERVERS];
     int length;
     int id;
-}Reader;
+}ThreadComm;
 void create_read_thread(Server *server_list, int len);
-void *thread_read_server(void *s);
+void *thread_read_servers(void *s);
 
 #endif //GAMESERVER_MASTERSERVER_H
