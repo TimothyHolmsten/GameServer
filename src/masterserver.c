@@ -8,7 +8,7 @@ void master_server() {
 
     Server server_list[NR_OF_SERVERS];
 
-    init_servers(server_list, NR_OF_SERVERS);
+    init_servers(server_list, NR_OF_SERVERS, PORT);
     init_child_handler();
 
     int sockfd, clientfd;
@@ -18,16 +18,21 @@ void master_server() {
 
     sockfd = socket(AF_INET, SOCK_STREAM, 0);
 
-    memset(self.sin_zero, NULL, sizeof(self.sin_zero));
+    if (setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &(int){ 1 }, sizeof(int)) < 0)
+        printf("SO_REUSEADDR failed");
+
+    memset(self.sin_zero, '\0', sizeof(self.sin_zero));
     self.sin_family = AF_INET;
     self.sin_port = htons(PORT);
     self.sin_addr.s_addr = inet_addr("127.0.0.1"); //INADDR_ANY
+    //self.sin_addr.s_addr = INADDR_ANY;
 
     bind(sockfd, (struct sockaddr*)&self, sizeof(self));
 
     listen(sockfd, 5);
 
     int running = 1;
+    int n = 0;
 
     while (running)
     {
@@ -35,37 +40,36 @@ void master_server() {
 
         clientfd = accept(sockfd, (struct sockaddr*)&client_addr, &addr_size);
 
-        if (clientfd != -1)
-        {
+        if (clientfd != -1) {
+
+            printf("Client Connected!\n");
+
+
+            switch (fork()) {
+                case -1:
+                    printf("Could not create server\n");
+                    exit(-1);
+
+                case 0:
+                    printf("Server Created\n");
+                    close(server_list[n].fd[0]);
+                    create_server(server_list[n]);
+
+                    exit(0);
+
+                default:
+                    close(server_list[n].fd[1]);
+                    server_list[n].running = 1;
+                    create_read_thread(server_list, NR_OF_SERVERS);
+                    n++;
+                    //wait(0);
+                    //sleep(5);
+                    //update_server_list(server_list, NR_OF_SERVERS);
+                    //read(server_list[0].fd[0], &k, 5);
+                    //printf("Server said: %s\n", k);
+            }
             close(clientfd);
-            continue;
         }
-        printf("Client Connected!\n");
-
-        /*
-        switch (fork())
-        {
-            case -1:
-                printf("Could not create server\n");
-                exit(-1);
-
-            case 0:
-                printf("Server Created %d!\n", server_list[0].server_id);
-
-        }*/
-
-        sleep(1);
-        uint32_t info;
-        char buf[8];
-        memset(buf,0, sizeof(buf));
-        //printf("%d\n", ntohl(info));
-        recv(clientfd, &buf, 8, 0);
-        //recv(clientfd, &info, sizeof(uint32_t), 0);
-
-        //printf("%s\n", buf);
-        printf("%d\n", buf[0]);
-
-        close(clientfd);
     }
 }
 
@@ -85,6 +89,57 @@ void init_child_handler() {
         exit(1);
     }
 }
+
+void update_server_list(Server *server_list, int len) {
+    for (int i = 0; i < len; i++)
+    {
+        printf("Server %d, running = %d\n", server_list[i].server_id, server_list[i].running);
+        Server s;
+
+        close(server_list[i].fd[1]);
+        read(server_list[i].fd[0], &s, sizeof(s));
+
+        server_list[s.server_id] = s;
+
+        printf("Updated server %d, running = %d\n", server_list[i].server_id, server_list[i].running);
+    }
+}
+
+void *thread_read_server(void *s)
+{
+    Reader *reader = (Reader*) s;
+
+    while(1) {
+        for (int i = 0; i < reader->length; i++) {
+            int k = 0;
+
+            if (reader->server_list[i].running == 0)
+                continue;
+
+            read(reader->server_list[i].fd[0], &k, sizeof(int));
+
+            printf("Server said: %d\n", k);
+        }
+    }
+    return NULL;
+}
+
+void create_read_thread(Server *server_list, int len)
+{
+    pthread_t r_thread;
+
+    Reader reader;
+    reader.id = 1;
+    reader.length = len;
+
+    for (int i = 0; i < len; i++)
+        reader.server_list[i] = server_list[i];
+
+    pthread_create(&r_thread, NULL, thread_read_server, &reader);
+
+}
+
+
 
 
 

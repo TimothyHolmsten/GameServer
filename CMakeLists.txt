@@ -1,9 +1,9 @@
-cmake_minimum_required(VERSION 3.5)
-project(GameServerTest)
+cmake_minimum_required(VERSION 3.0.2)
+project(GameServer)
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
+set(CMAKE_C_FLAGS "-std=c99 -D_XOPEN_SOURCE -D_POSIX_C_SOURCE=200809L -pthread")
 
 file(GLOB SERVER_SRC src/*.c src/headers/*.h)
 
 set(SOURCE_FILES ${SERVER_SRC} src/server.c src/headers/server.h)
-add_executable(GameServerTest ${SOURCE_FILES})
+add_executable(Server_Start ${SOURCE_FILES})
