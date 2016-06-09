@@ -108,25 +108,19 @@ void update_server_list(Server *server_list, int len) {
 void *thread_read_servers(void *s)
 {
     ThreadComm *reader = (ThreadComm*) s;
+    Packet packet;
 
     int running = 1;
     while(running) {
         for (int i = 0; i < reader->length; i++) {
-            int data = 0;
-            Packet packet;
-
-            packet.data[0] = 10;
+            packet = packet_nullify(packet);
 
             if (reader->server_list[i].running == 0)
                 continue;
 
-            //read(reader->server_list[i].fd_master[0], &data, sizeof(int));
-
-            write(reader->server_list[i].fd_child[1], &packet.data, sizeof(int)*PACKET_LENGTH);
             read(reader->server_list[i].fd_master[0], &packet.data, sizeof(int)*PACKET_LENGTH);
             handle_packet(&packet, &reader->server_list[i]);
-            //printf("S:%d #1: %d, #2: %d\n", i, packet.data[0], packet.data[2]);
-            printf("%d\n", reader->server_list[i].nr_of_clients);
+
             usleep(16000);
         }
     }
