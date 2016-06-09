@@ -23,6 +23,4 @@ void create_comm_threads(Server *server);
 void *thread_read_server(void *s);
 void *thread_write_server(void *s);
 
-int handle_packet(Packet *packet, Server *server);
-
 #endif //GAMESERVERTEST_SERVER_H

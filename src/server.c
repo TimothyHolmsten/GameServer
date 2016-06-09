@@ -44,7 +44,7 @@ int create_server(Server data) {
     pthread_create(&w_thread, NULL, thread_write_server, &thread_args);
 
     //close(data.fd_master[0]);
-
+    data.nr_of_clients = 2;
     int running = 1;
     while (running)
     {
@@ -134,10 +134,10 @@ void *thread_write_server(void *s) {
     int running = 1;
     while(running)
     {
-        /*
-        writer->packet->data[0] = 0;
+    /*
+        writer->packet->data[0] = 13;
         writer->packet->data[1] = 100;
-        */
+    */
         write(writer->server->fd_master[1], &writer->packet->data, sizeof(int)*PACKET_LENGTH);
 
         //sleep(1);
@@ -145,29 +145,6 @@ void *thread_write_server(void *s) {
     }
 
     return NULL;
-}
-
-int handle_packet(Packet *packet, Server *server) {
-    int type = packet->data[0];
-    int server_id = packet->data[1];
-
-    if(type == 0)
-        return 0;
-
-    if(type == 10)
-    {
-        packet->data[0] = 11;
-        return 0;
-    }
-    if(type == 11)
-    {
-        packet->data[0] = 0;
-        packet->data[1] = 1337;
-        server->nr_of_clients = 10;
-        return 0;
-    }
-
-    return -1;
 }
 
 

@@ -125,7 +125,7 @@ void *thread_read_servers(void *s)
             write(reader->server_list[i].fd_child[1], &packet.data, sizeof(int)*PACKET_LENGTH);
             read(reader->server_list[i].fd_master[0], &packet.data, sizeof(int)*PACKET_LENGTH);
             handle_packet(&packet, &reader->server_list[i]);
-            //printf("#1: %d, #2: %d\n", packet.data[0], packet.data[1]);
+            //printf("S:%d #1: %d, #2: %d\n", i, packet.data[0], packet.data[2]);
             printf("%d\n", reader->server_list[i].nr_of_clients);
             usleep(16000);
         }
