@@ -52,13 +52,13 @@ void master_server() {
 
                 case 0:
                     printf("Server Created\n");
-                    close(server_list[n].fd[0]);
+                    //close(server_list[n].fd_master[0]);
                     create_server(server_list[n]);
 
                     exit(0);
 
                 default:
-                    close(server_list[n].fd[1]);
+                    //close(server_list[n].fd_master[1]);
                     server_list[n].running = 1;
                     create_read_thread(server_list, NR_OF_SERVERS);
                     n++;
@@ -96,8 +96,8 @@ void update_server_list(Server *server_list, int len) {
         printf("Server %d, running = %d\n", server_list[i].server_id, server_list[i].running);
         Server s;
 
-        close(server_list[i].fd[1]);
-        read(server_list[i].fd[0], &s, sizeof(s));
+        close(server_list[i].fd_master[1]);
+        read(server_list[i].fd_master[0], &s, sizeof(s));
 
         server_list[s.server_id] = s;
 
@@ -109,16 +109,25 @@ void *thread_read_servers(void *s)
 {
     ThreadComm *reader = (ThreadComm*) s;
 
-    while(1) {
+    int running = 1;
+    while(running) {
         for (int i = 0; i < reader->length; i++) {
-            int k = 0;
+            int data = 0;
+            Packet packet;
+
+            packet.data[0] = 10;
 
             if (reader->server_list[i].running == 0)
                 continue;
 
-            read(reader->server_list[i].fd[0], &k, sizeof(int));
+            //read(reader->server_list[i].fd_master[0], &data, sizeof(int));
 
-            printf("Server said: %d\n", k);
+            write(reader->server_list[i].fd_child[1], &packet.data, sizeof(int)*PACKET_LENGTH);
+            read(reader->server_list[i].fd_master[0], &packet.data, sizeof(int)*PACKET_LENGTH);
+            handle_packet(&packet, &reader->server_list[i]);
+            //printf("#1: %d, #2: %d\n", packet.data[0], packet.data[1]);
+            printf("%d\n", reader->server_list[i].nr_of_clients);
+            usleep(16000);
         }
     }
     return NULL;

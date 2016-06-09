@@ -13,28 +13,16 @@
 #include <unistd.h>
 #include <pthread.h>
 #include "packet.h"
-
-#define MAX_CLIENTS 4
-
-typedef struct Server{
-    int fd[2];
-    int sockfd, masterfd;
-    int port;
-    int clients[MAX_CLIENTS];
-    int nr_of_clients;
-    int server_id;
-    int running;
-}Server;
-
-typedef struct ThreadServerComm {
-    Server server;
-    Packet packet;
-} ThreadServerComm;
+#include "structs.h"
 
 int create_server(Server data);
 void init_servers(Server *servers, int len, int port);
-int calculate_best_server(Server * servers, int len);
-void create_comm_threads(Server server);
+int calculate_best_server(Server *servers, int len);
+
+void create_comm_threads(Server *server);
 void *thread_read_server(void *s);
+void *thread_write_server(void *s);
+
+int handle_packet(Packet *packet, Server *server);
 
 #endif //GAMESERVERTEST_SERVER_H
