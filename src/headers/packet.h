@@ -8,6 +8,7 @@
 
 #include "structs.h"
 #include <stdio.h>
+#include <unistd.h>
 
 Packet packet_nullify(Packet packet);
 int handle_packet(Packet *packet, Server *server);
@@ -19,5 +20,7 @@ int packet_get_running(Packet *packet, Server *server);
 int packet_set_running(Packet *packet, Server *server);
 
 int packet_client_joined(Packet *packet, Server *server);
+
+void send_packet(int packet, int server_id, int opt, int fd);
 
 #endif //GAMESERVER_PACKET_H

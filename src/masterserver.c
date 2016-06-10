@@ -61,12 +61,10 @@ int redirect_new_client(int clientfd, Server *server_list) {
     if (server != -1)
     {
         server_list[server].clients[server_list->nr_of_clients] = clientfd;
-        // Write packet
-        Packet p[PACKET_LENGTH];
-        p->data[0] = 30;
-        p->data[2] = clientfd;
-        write(server_list[server].fd_child[1], &p->data, sizeof(int)*PACKET_LENGTH);
+        // Send packet
+        send_packet(30, -1, clientfd, server_list[server].fd_child[1]);
         server_list[server].nr_of_clients++;
+
         return 0;
     }
     else // Start a server

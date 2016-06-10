@@ -72,6 +72,17 @@ int packet_set_running(Packet *packet, Server *server) {
     return 0;
 }
 
+void send_packet(int packet, int server_id, int opt, int fd) {
+    Packet p;
+    p.data[0] = packet;
+    p.data[1] = server_id;
+    p.data[2] = opt;
+
+    write(fd, &p.data, sizeof(int)*PACKET_LENGTH);
+}
+
+
+
 
 
 

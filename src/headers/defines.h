@@ -10,6 +10,6 @@
 #define NR_OF_SERVERS 10
 #define PORT 5000
 
-#define PACKET_LENGTH 4
+#define PACKET_LENGTH 3
 
 #endif //GAMESERVER_DEFINES_H
