@@ -134,10 +134,6 @@ void *thread_write_server(void *s) {
     int running = 1;
     while(running)
     {
-    /*
-        writer->packet->data[0] = 13;
-        writer->packet->data[1] = 100;
-    */
         write(writer->server->fd_master[1], &writer->packet->data, sizeof(int)*PACKET_LENGTH);
 
         //sleep(1);

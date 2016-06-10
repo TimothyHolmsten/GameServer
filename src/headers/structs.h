@@ -28,9 +28,7 @@ typedef struct ThreadServerComm {
 } ThreadServerComm;
 
 typedef struct ThreadComm{
-    Server server_list[NR_OF_SERVERS];
-    int length;
-    int id;
+    Server *server_list;
 }ThreadComm;
 
 #endif //GAMESERVER_STRUCTS_H

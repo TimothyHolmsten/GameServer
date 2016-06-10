@@ -34,6 +34,14 @@ void master_server() {
     int running = 1;
     int n = 0;
 
+    //create_read_thread(server_list, NR_OF_SERVERS);
+
+    pthread_t r_thread;
+    ThreadComm reader;
+    Server *list = server_list;
+    reader.server_list = list;
+    pthread_create(&r_thread, NULL, thread_read_servers, &reader);
+
     while (running)
     {
         addr_size = sizeof(client_addr);
@@ -60,7 +68,6 @@ void master_server() {
                 default:
                     //close(server_list[n].fd_master[1]);
                     server_list[n].running = 1;
-                    create_read_thread(server_list, NR_OF_SERVERS);
                     n++;
                     //wait(0);
                     //sleep(5);
@@ -112,7 +119,7 @@ void *thread_read_servers(void *s)
 
     int running = 1;
     while(running) {
-        for (int i = 0; i < reader->length; i++) {
+        for (int i = 0; i < NR_OF_SERVERS; i++) {
             packet = packet_nullify(packet);
 
             if (reader->server_list[i].running == 0)
@@ -132,12 +139,13 @@ void create_read_thread(Server *server_list, int len)
     pthread_t r_thread;
 
     ThreadComm reader;
-    reader.id = 1;
-    reader.length = len;
-
+    /*
     for (int i = 0; i < len; i++)
-        reader.server_list[i] = server_list[i];
+        reader.server_list[i] = server_list[i];*/
+
+    reader.server_list = server_list;
+
+    printf("%d\n", reader.server_list[5].server_id);
 
     pthread_create(&r_thread, NULL, thread_read_servers, &reader);
-
 }
