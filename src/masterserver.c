@@ -31,10 +31,6 @@ void master_server() {
 
     listen(sockfd, 5);
 
-    int n = 0;
-
-    //create_read_thread(server_list, NR_OF_SERVERS);
-
     pthread_t r_thread;
     ThreadComm reader;
     Server *list = server_list;
@@ -51,24 +47,6 @@ void master_server() {
         if (clientfd != -1) {
 
             printf("Client Connected!\n");
-            /*
-            switch (fork()) {
-                case -1:
-                    printf("Could not create server\n");
-                    exit(-1);
-
-                case 0:
-                    printf("Server Created\n");
-                    server_list[n].clients[0] = clientfd;
-                    init_child_server(server_list[n]);
-
-                    exit(0);
-
-                default:
-                    server_list[n].running = 1;
-                    n++;
-            }
-             */
 
             redirect_new_client(clientfd, server_list);
             close(clientfd);
