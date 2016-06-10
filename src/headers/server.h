@@ -15,11 +15,13 @@
 #include "packet.h"
 #include "structs.h"
 
-int create_server(Server data);
+int init_child_server(Server data);
+int create_child_server(Server data);
 void init_servers(Server *servers, int len, int port);
 int calculate_best_server(Server *servers, int len);
+int server_is_full(Server server);
+int server_is_running(Server server);
 
-void create_comm_threads(Server *server);
 void *thread_read_server(void *s);
 void *thread_write_server(void *s);
 

@@ -4,31 +4,10 @@
 
 #include "headers/server.h"
 
-int create_server(Server data) {
-    /*
-    int sockfd, clientfd;
-    struct sockaddr_in self;
-    struct sockaddr_in client_addr;
-    socklen_t addr_size;
+int init_child_server(Server data) {
 
-    sockfd = socket(AF_INET, SOCK_STREAM, 0);
-
-    memset(self.sin_zero, NULL, sizeof(self.sin_zero));
-    self.sin_family = AF_INET;
-    self.sin_port = htons(data.port);
-    self.sin_addr.s_addr = inet_addr("127.0.0.1"); //INADDR_ANY
-
-    bind(sockfd, (struct sockaddr*)&self, sizeof(self));
-
-    listen(sockfd, MAX_CLIENTS);
-    */
-    //printf("Hello from server %d\n", data.server_id);
     data.running = 1;
-    /*write(data.fd[1], "Hej!", 4);
-    sleep(4);
-    write(data.fd[1], "exit", 4);*/
     int n = 0;
-    //create_comm_threads(&data);
 
     pthread_t r_thread, w_thread;
     Packet packet;
@@ -44,14 +23,13 @@ int create_server(Server data) {
     pthread_create(&w_thread, NULL, thread_write_server, &thread_args);
 
     //close(data.fd_master[0]);
-    data.nr_of_clients = 2;
     int running = 1;
     while (running)
     {
         char l[8];
         int b = 10*data.server_id;
         //write(data.fd_master[1], &b, sizeof(int));
-        printf("Server %d\n", data.server_id);
+        printf("Server %d\n", data.nr_of_clients);
         //read(data.fd_child[0], &b, sizeof(int));
         sleep(2);
         n++;
@@ -72,21 +50,22 @@ void init_servers(Server *servers, int len, int port) {
 }
 
 int calculate_best_server(Server *servers, int len) {
-    int best_server = 0;
+    int best_server = -1;
     int points = 0;
     int temp_points = 0;
-    int players = 0;
+    int clients = 0;
     int running = 0;
 
     for(int i=0; i < len; i++)
     {
-        players = servers[i].nr_of_clients;
+        clients = servers[i].nr_of_clients;
         running = servers[i].running;
 
         temp_points = points;
-        points = players + running;
+        //points = clients + running;
+        points = clients;
 
-        if (players == MAX_CLIENTS || points == MAX_CLIENTS + 1)
+        if (points == MAX_CLIENTS || running == 0)
             continue;
 
         if (points >= temp_points)
@@ -94,18 +73,6 @@ int calculate_best_server(Server *servers, int len) {
     }
 
     return best_server;
-}
-
-void create_comm_threads(Server *server) {
-    pthread_t r_thread;
-
-    Packet *packet;
-    //packet_nullify(packet);
-
-    ThreadServerComm reader;
-    reader.server = server;
-    //reader.packet = packet;
-    pthread_create(&r_thread, NULL, thread_read_server, &reader);
 }
 
 void *thread_read_server(void *s) {
@@ -119,7 +86,6 @@ void *thread_read_server(void *s) {
         read(reader->server->fd_child[0], &reader->packet->data, sizeof(int)*PACKET_LENGTH);
         handle_packet(reader->packet, reader->server);
 
-        //sleep(1);
         usleep(16000);
     }
 
@@ -136,12 +102,47 @@ void *thread_write_server(void *s) {
     {
         write(writer->server->fd_master[1], &writer->packet->data, sizeof(int)*PACKET_LENGTH);
 
-        //sleep(1);
         usleep(16000);
     }
 
     return NULL;
 }
+
+int server_is_full(Server server) {
+    if (server.nr_of_clients == MAX_CLIENTS)
+        return 1;
+    return 0;
+}
+
+int server_is_running(Server server) {
+    if (server.running == 1)
+        return 1;
+    return 0;
+}
+
+int create_child_server(Server data) {
+    switch (fork()) {
+        case -1:
+            printf("Could not create server\n");
+            exit(-1);
+
+        case 0:
+            printf("Server Created\n");
+            init_child_server(data);
+
+            exit(0);
+        default:
+            usleep(16000);
+    }
+    return 0;
+}
+
+
+
+
+
+
+
 
 
 

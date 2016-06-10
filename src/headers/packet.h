@@ -18,4 +18,6 @@ int packet_set_nr_of_clients(Packet *packet, Server *server);
 int packet_get_running(Packet *packet, Server *server);
 int packet_set_running(Packet *packet, Server *server);
 
+int packet_client_joined(Packet *packet, Server *server);
+
 #endif //GAMESERVER_PACKET_H

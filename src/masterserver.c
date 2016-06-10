@@ -31,7 +31,6 @@ void master_server() {
 
     listen(sockfd, 5);
 
-    int running = 1;
     int n = 0;
 
     //create_read_thread(server_list, NR_OF_SERVERS);
@@ -42,6 +41,7 @@ void master_server() {
     reader.server_list = list;
     pthread_create(&r_thread, NULL, thread_read_servers, &reader);
 
+    int running = 1;
     while (running)
     {
         addr_size = sizeof(client_addr);
@@ -51,8 +51,7 @@ void master_server() {
         if (clientfd != -1) {
 
             printf("Client Connected!\n");
-
-
+            /*
             switch (fork()) {
                 case -1:
                     printf("Could not create server\n");
@@ -60,24 +59,54 @@ void master_server() {
 
                 case 0:
                     printf("Server Created\n");
-                    //close(server_list[n].fd_master[0]);
-                    create_server(server_list[n]);
+                    server_list[n].clients[0] = clientfd;
+                    init_child_server(server_list[n]);
 
                     exit(0);
 
                 default:
-                    //close(server_list[n].fd_master[1]);
                     server_list[n].running = 1;
                     n++;
-                    //wait(0);
-                    //sleep(5);
-                    //update_server_list(server_list, NR_OF_SERVERS);
-                    //read(server_list[0].fd[0], &k, 5);
-                    //printf("Server said: %s\n", k);
             }
+             */
+
+            redirect_new_client(clientfd, server_list);
             close(clientfd);
         }
     }
+}
+
+int redirect_new_client(int clientfd, Server *server_list) {
+    int server = calculate_best_server(server_list, NR_OF_SERVERS);
+    int start_server = -1;
+
+    if (server != -1)
+    {
+        server_list[server].clients[server_list->nr_of_clients] = clientfd;
+        // Write packet
+        Packet p[PACKET_LENGTH];
+        p->data[0] = 30;
+        p->data[2] = clientfd;
+        write(server_list[server].fd_child[1], &p->data, sizeof(int)*PACKET_LENGTH);
+        server_list[server].nr_of_clients++;
+        return 0;
+    }
+    else // Start a server
+    {
+        for (int i = 0; i < NR_OF_SERVERS; i++)
+        {
+            if (server_is_running(server_list[i]))
+                continue;
+
+            start_server = i;
+            server_list[i].running = 1;
+            server_list[i].clients[0] = clientfd;
+            server_list[i].nr_of_clients = 1;
+            create_child_server(server_list[i]);
+            break;
+        }
+    }
+    return start_server;
 }
 
 void sigchld_handler(int s)
@@ -132,20 +161,4 @@ void *thread_read_servers(void *s)
         }
     }
     return NULL;
-}
-
-void create_read_thread(Server *server_list, int len)
-{
-    pthread_t r_thread;
-
-    ThreadComm reader;
-    /*
-    for (int i = 0; i < len; i++)
-        reader.server_list[i] = server_list[i];*/
-
-    reader.server_list = server_list;
-
-    printf("%d\n", reader.server_list[5].server_id);
-
-    pthread_create(&r_thread, NULL, thread_read_servers, &reader);
 }

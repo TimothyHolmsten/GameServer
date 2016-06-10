@@ -30,7 +30,20 @@ int handle_packet(Packet *packet, Server *server) {
         return packet_get_running(packet, server);
     if(type == 21)
         return packet_set_running(packet, server);
+
+    // Player joined
+    if(type == 30)
+        return packet_client_joined(packet, server);
+
     return -1;
+}
+
+int packet_client_joined(Packet *packet, Server *server)
+{
+    packet->data[0] = 0;
+    server->clients[server->nr_of_clients] = packet->data[2];
+    server->nr_of_clients++;
+    return 0;
 }
 
 int packet_get_nr_of_clients(Packet *packet, Server *server) {
