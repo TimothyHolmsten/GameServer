@@ -59,36 +59,16 @@ int init_child_server(Server data) {
 
         if (clientfd != -1) {
 
-            printf("Client Connected To Child Server %d! \n", data.server_id);
+            printf("Server %d got a connection! \n", data.server_id);
 
             clients[n++] = create_client(clientfd);
 
             data.nr_of_clients++;
 
             send_packet(11, data.server_id, data.nr_of_clients, data.fd_master[1]);
-
-            printf("players: %d\n", data.nr_of_clients);
-
-
-            //close(clientfd);
+            printf("Server %d players: %d\n", data.server_id, data.nr_of_clients);
         }
     }
-
-    //close(data.fd_master[0]);
-    int running = 1;
-    while (running)
-    {
-        char l[8];
-        int b = 10*data.server_id;
-        //write(data.fd_master[1], &b, sizeof(int));
-        //printf("Server %d\n", data.nr_of_clients);
-        //read(data.fd_child[0], &b, sizeof(int));
-        recv(data.clients[1], &b, sizeof(int), NULL);
-        printf("%d\n", b);
-        usleep(100000);
-        n++;
-    }
-    return 0;
 }
 
 void init_servers(Server *servers, int len, int port) {

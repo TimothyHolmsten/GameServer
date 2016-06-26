@@ -50,7 +50,7 @@ void master_server() {
 
         if (clientfd != -1) {
 
-            printf("Client Connected! %d\n", clientfd);
+            printf("Client Connected!\n");
 
             redirect_new_client(clientfd, server_list);
             close(clientfd);
