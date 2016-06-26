@@ -14,6 +14,7 @@
 #include <pthread.h>
 #include "packet.h"
 #include "structs.h"
+#include "client.h"
 
 int init_child_server(Server data);
 int create_child_server(Server data);
@@ -22,7 +23,9 @@ int calculate_best_server(Server *servers, int len);
 int server_is_full(Server server);
 int server_is_running(Server server);
 
-void *thread_read_server(void *s);
-void *thread_write_server(void *s);
+void *thread_read_server(void *args);
+void *thread_write_server(void *args);
+
+void *thread_client(void *args);
 
 #endif //GAMESERVERTEST_SERVER_H

@@ -22,6 +22,11 @@ typedef struct Server{
     int running;
 }Server;
 
+typedef struct Client{
+    int id;
+    int connected;
+}Client;
+
 typedef struct ThreadServerComm {
     Server *server;
     Packet *packet;
@@ -29,6 +34,7 @@ typedef struct ThreadServerComm {
 
 typedef struct ThreadComm{
     Server *server_list;
+    int id;
 }ThreadComm;
 
 #endif //GAMESERVER_STRUCTS_H

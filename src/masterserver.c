@@ -31,11 +31,15 @@ void master_server() {
 
     listen(sockfd, 5);
 
-    pthread_t r_thread;
-    ThreadComm reader;
-    Server *list = server_list;
-    reader.server_list = list;
-    pthread_create(&r_thread, NULL, thread_read_servers, &reader);
+    pthread_t reading_threads[NR_OF_SERVERS];
+    ThreadComm readers[NR_OF_SERVERS];
+    for (int i = 0; i < NR_OF_SERVERS; i++) {
+        readers[i].id = i;
+        Server *list = server_list;
+        readers[i].server_list = list;
+
+        pthread_create(&reading_threads[i], NULL, thread_read_servers, &readers[i]);
+    }
 
     int running = 1;
     while (running)
@@ -46,7 +50,7 @@ void master_server() {
 
         if (clientfd != -1) {
 
-            printf("Client Connected!\n");
+            printf("Client Connected! %d\n", clientfd);
 
             redirect_new_client(clientfd, server_list);
             close(clientfd);
@@ -60,10 +64,7 @@ int redirect_new_client(int clientfd, Server *server_list) {
 
     if (server != -1)
     {
-        server_list[server].clients[server_list->nr_of_clients] = clientfd;
-        // Send packet
-        send_packet(30, -1, clientfd, server_list[server].fd_child[1]);
-        server_list[server].nr_of_clients++;
+        send(clientfd, &server_list[server].port, sizeof(int), 0);
 
         return 0;
     }
@@ -77,8 +78,9 @@ int redirect_new_client(int clientfd, Server *server_list) {
             start_server = i;
             server_list[i].running = 1;
             server_list[i].clients[0] = clientfd;
-            server_list[i].nr_of_clients = 1;
+            server_list[i].nr_of_clients = 0;
             create_child_server(server_list[i]);
+            send(clientfd, &server_list[i].port, sizeof(int), 0);
             break;
         }
     }
@@ -124,17 +126,14 @@ void *thread_read_servers(void *s)
 
     int running = 1;
     while(running) {
-        for (int i = 0; i < NR_OF_SERVERS; i++) {
-            packet = packet_nullify(packet);
+        packet = packet_nullify(packet);
+        if (reader->server_list[reader->id].running == 0)
+            continue;
 
-            if (reader->server_list[i].running == 0)
-                continue;
+        read(reader->server_list[reader->id].fd_master[0], &packet.data, sizeof(int)*PACKET_LENGTH);
+        handle_packet(&packet, &reader->server_list[reader->id]);
 
-            read(reader->server_list[i].fd_master[0], &packet.data, sizeof(int)*PACKET_LENGTH);
-            handle_packet(&packet, &reader->server_list[i]);
-
-            usleep(16000);
-        }
+        usleep(16000);
     }
     return NULL;
 }
