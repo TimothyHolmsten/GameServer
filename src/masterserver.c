@@ -29,7 +29,7 @@ void master_server() {
 
     bind(sockfd, (struct sockaddr*)&self, sizeof(self));
 
-    listen(sockfd, 5);
+    listen(sockfd, 100);
 
     pthread_t reading_threads[NR_OF_SERVERS];
     ThreadComm readers[NR_OF_SERVERS];
@@ -44,6 +44,8 @@ void master_server() {
     int running = 1;
     while (running)
     {
+        // Sleeping 100 ms
+        usleep(100000);
         addr_size = sizeof(client_addr);
 
         clientfd = accept(sockfd, (struct sockaddr*)&client_addr, &addr_size);
@@ -128,7 +130,10 @@ void *thread_read_servers(void *s)
     while(running) {
         packet = packet_nullify(packet);
         if (reader->server_list[reader->id].running == 0)
+        {
+            usleep(16000);
             continue;
+        }
 
         read(reader->server_list[reader->id].fd_master[0], &packet.data, sizeof(int)*PACKET_LENGTH);
         handle_packet(&packet, &reader->server_list[reader->id]);
