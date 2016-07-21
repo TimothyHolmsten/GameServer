@@ -12,7 +12,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <pthread.h>
-#include "packet.h"
+#include "communication.h"
 #include "structs.h"
 #include "client.h"
 

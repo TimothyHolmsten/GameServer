@@ -134,7 +134,7 @@ void *thread_read_servers(void *s) {
         }
 
         read(reader->server_list[reader->id].fd_master[0], &packet.data, sizeof(int) * PACKET_LENGTH);
-        handle_packet(&packet, &reader->server_list[reader->id]);
+        handle_communication(&packet, &reader->server_list[reader->id]);
 
         //usleep(16000);
         //printf("%d\n", packet.data[0]);

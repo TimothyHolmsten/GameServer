@@ -137,7 +137,7 @@ void *thread_read_server(void *args) {
     int running = 1;
     while (running) {
         read(reader->server->fd_child[0], &reader->packet->data, sizeof(int) * PACKET_LENGTH);
-        handle_packet(reader->packet, reader->server);
+        handle_communication(reader->packet, reader->server);
 
         //usleep(16000);
     }

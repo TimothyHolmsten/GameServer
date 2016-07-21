@@ -12,7 +12,7 @@
 
 Packet packet_nullify(Packet packet);
 
-int handle_packet(Packet *packet, Server *server);
+int handle_communication(Packet *packet, Server *server);
 
 int packet_get_nr_of_clients(Packet *packet, Server *server);
 

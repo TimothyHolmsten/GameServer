@@ -2,7 +2,7 @@
 // Created by Timothy Friberg Holmsten on 08/06/16.
 //
 
-#include "headers/packet.h"
+#include "headers/communication.h"
 
 Packet packet_nullify(Packet packet) {
     for (int i = 0; i < PACKET_LENGTH; i++) {
@@ -11,7 +11,7 @@ Packet packet_nullify(Packet packet) {
     return packet;
 }
 
-int handle_packet(Packet *packet, Server *server) {
+int handle_communication(Packet *packet, Server *server) {
     int type = packet->data[0];
 
     // No message
