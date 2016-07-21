@@ -7,11 +7,11 @@
 
 #include "defines.h"
 
-typedef struct Packet{
+typedef struct Packet {
     int data[PACKET_LENGTH];
-}Packet;
+} Packet;
 
-typedef struct Server{
+typedef struct Server {
     int fd_master[2];
     int fd_child[2];
     int sockfd, masterfd;
@@ -20,21 +20,23 @@ typedef struct Server{
     int nr_of_clients;
     int server_id;
     int running;
-}Server;
+    int ready_for_new_client;
+} Server;
 
-typedef struct Client{
+typedef struct Client {
     int id;
     int connected;
-}Client;
+    int socket;
+} Client;
 
 typedef struct ThreadServerComm {
     Server *server;
     Packet *packet;
 } ThreadServerComm;
 
-typedef struct ThreadComm{
+typedef struct ThreadComm {
     Server *server_list;
     int id;
-}ThreadComm;
+} ThreadComm;
 
 #endif //GAMESERVER_STRUCTS_H

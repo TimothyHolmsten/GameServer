@@ -3,7 +3,6 @@
 //
 #include "headers/masterserver.h"
 
-
 void master_server() {
 
     Server server_list[NR_OF_SERVERS];
@@ -18,7 +17,7 @@ void master_server() {
 
     sockfd = socket(AF_INET, SOCK_STREAM, 0);
 
-    if (setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &(int){ 1 }, sizeof(int)) < 0)
+    if (setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &(int) {1}, sizeof(int)) < 0)
         printf("SO_REUSEADDR failed");
 
     memset(self.sin_zero, '\0', sizeof(self.sin_zero));
@@ -27,9 +26,16 @@ void master_server() {
     self.sin_addr.s_addr = inet_addr("127.0.0.1"); //INADDR_ANY
     //self.sin_addr.s_addr = INADDR_ANY;
 
-    bind(sockfd, (struct sockaddr*)&self, sizeof(self));
+    bind(sockfd, (struct sockaddr *) &self, sizeof(self));
 
-    listen(sockfd, 100);
+    listen(sockfd, NR_OF_SERVERS * MAX_CLIENTS);
+
+    pthread_mutex_t lock;
+
+    if (pthread_mutex_init(&lock, NULL) != 0) {
+        printf("\n mutex init failed\n");
+        return;
+    }
 
     pthread_t reading_threads[NR_OF_SERVERS];
     ThreadComm readers[NR_OF_SERVERS];
@@ -42,17 +48,16 @@ void master_server() {
     }
 
     int running = 1;
-    while (running)
-    {
-        // Sleeping 100 ms
-        usleep(100000);
+    while (running) {
+        usleep(10000);
+
         addr_size = sizeof(client_addr);
 
-        clientfd = accept(sockfd, (struct sockaddr*)&client_addr, &addr_size);
+        clientfd = accept(sockfd, (struct sockaddr *) &client_addr, &addr_size);
 
         if (clientfd != -1) {
 
-            printf("Client Connected!\n");
+            //printf("Client Connected!\n");
 
             redirect_new_client(clientfd, server_list);
             close(clientfd);
@@ -64,16 +69,14 @@ int redirect_new_client(int clientfd, Server *server_list) {
     int server = calculate_best_server(server_list, NR_OF_SERVERS);
     int start_server = -1;
 
-    if (server != -1)
-    {
+    if (server != -1) {
         send(clientfd, &server_list[server].port, sizeof(int), 0);
 
         return 0;
     }
     else // Start a server
     {
-        for (int i = 0; i < NR_OF_SERVERS; i++)
-        {
+        for (int i = 0; i < NR_OF_SERVERS; i++) {
             if (server_is_running(server_list[i]))
                 continue;
 
@@ -89,9 +92,8 @@ int redirect_new_client(int clientfd, Server *server_list) {
     return start_server;
 }
 
-void sigchld_handler(int s)
-{
-    while(waitpid(-1,NULL,WNOHANG) > 0);
+void sigchld_handler(int s) {
+    while (waitpid(-1, NULL, WNOHANG) > 0);
 }
 
 void init_child_handler() {
@@ -99,16 +101,14 @@ void init_child_handler() {
     sa.sa_handler = sigchld_handler;
     sigemptyset(&sa.sa_mask);
     sa.sa_flags = SA_RESTART;
-    if (sigaction(SIGCHLD, &sa, NULL) == -1)
-    {
+    if (sigaction(SIGCHLD, &sa, NULL) == -1) {
         perror("sigaction");
         exit(1);
     }
 }
 
 void update_server_list(Server *server_list, int len) {
-    for (int i = 0; i < len; i++)
-    {
+    for (int i = 0; i < len; i++) {
         printf("Server %d, running = %d\n", server_list[i].server_id, server_list[i].running);
         Server s;
 
@@ -121,24 +121,23 @@ void update_server_list(Server *server_list, int len) {
     }
 }
 
-void *thread_read_servers(void *s)
-{
-    ThreadComm *reader = (ThreadComm*) s;
+void *thread_read_servers(void *s) {
+    ThreadComm *reader = (ThreadComm *) s;
     Packet packet;
 
     int running = 1;
-    while(running) {
+    while (running) {
         packet = packet_nullify(packet);
-        if (reader->server_list[reader->id].running == 0)
-        {
+        if (reader->server_list[reader->id].running == 0) {
             usleep(16000);
             continue;
         }
 
-        read(reader->server_list[reader->id].fd_master[0], &packet.data, sizeof(int)*PACKET_LENGTH);
+        read(reader->server_list[reader->id].fd_master[0], &packet.data, sizeof(int) * PACKET_LENGTH);
         handle_packet(&packet, &reader->server_list[reader->id]);
 
-        usleep(16000);
+        //usleep(16000);
+        //printf("%d\n", packet.data[0]);
     }
     return NULL;
 }

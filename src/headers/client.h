@@ -7,7 +7,8 @@
 
 #include "structs.h"
 
-Client create_client(int id);
+Client create_client(int id, int socket);
+
 void init_clients(Client *clients, int n);
 
 #endif //GAMESERVER_CLIENT_H

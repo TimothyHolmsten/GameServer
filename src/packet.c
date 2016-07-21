@@ -5,8 +5,7 @@
 #include "headers/packet.h"
 
 Packet packet_nullify(Packet packet) {
-    for (int i = 0; i < PACKET_LENGTH; i++)
-    {
+    for (int i = 0; i < PACKET_LENGTH; i++) {
         packet.data[i] = 0;
     }
     return packet;
@@ -16,33 +15,50 @@ int handle_packet(Packet *packet, Server *server) {
     int type = packet->data[0];
 
     // No message
-    if(type == 0)
+    if (type == 0)
         return 0;
 
     // Get/Set nr_of_clients
-    if(type == 10)
+    if (type == 10)
         return packet_get_nr_of_clients(packet, server);
-    if(type == 11)
+    if (type == 11)
         return packet_set_nr_of_clients(packet, server);
 
     // Get/Set server running
-    if(type == 20)
+    if (type == 20)
         return packet_get_running(packet, server);
-    if(type == 21)
+    if (type == 21)
         return packet_set_running(packet, server);
 
     // Player joined
-    if(type == 30)
+    if (type == 30)
         return packet_client_joined(packet, server);
+
+    // Get/Set server ready for new client
+    if (type == 40)
+        return packet_get_server_ready_for_new_client(packet, server);
+    if (type == 41)
+        return packet_set_server_ready_for_new_client(packet, server);
 
     return -1;
 }
 
-int packet_client_joined(Packet *packet, Server *server)
-{
+int packet_get_server_ready_for_new_client(Packet *packet, Server *server) {
+    packet->data[0] = 41;
+    packet->data[1] = server->server_id;
+    packet->data[2] = server->ready_for_new_client;
+    return 0;
+}
+
+int packet_set_server_ready_for_new_client(Packet *packet, Server *server) {
+    packet->data[0] = 0;
+    server->ready_for_new_client = packet->data[2];
+    return 0;
+}
+
+int packet_client_joined(Packet *packet, Server *server) {
     packet->data[0] = 0;
     server->clients[server->nr_of_clients] = packet->data[2];
-    server->nr_of_clients++;
     return 0;
 }
 
@@ -78,7 +94,7 @@ void send_packet(int packet, int server_id, int opt, int fd) {
     p.data[1] = server_id;
     p.data[2] = opt;
 
-    write(fd, &p.data, sizeof(int)*PACKET_LENGTH);
+    write(fd, &p.data, sizeof(int) * PACKET_LENGTH);
 }
 
 

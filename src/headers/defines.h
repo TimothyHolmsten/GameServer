@@ -7,7 +7,7 @@
 
 #define MAX_CLIENTS 4
 
-#define NR_OF_SERVERS 10
+#define NR_OF_SERVERS 50
 #define PORT 5000
 
 #define PACKET_LENGTH 3

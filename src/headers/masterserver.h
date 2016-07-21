@@ -22,9 +22,11 @@
 #include "structs.h"
 
 void sigchld_handler(int s);
+
 void init_child_handler();
 
 void master_server();
+
 void update_server_list(Server *server_list, int len);
 
 void *thread_read_servers(void *s);

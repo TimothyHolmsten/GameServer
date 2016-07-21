@@ -13,7 +13,7 @@ int init_child_server(Server data) {
 
     sockfd = socket(AF_INET, SOCK_STREAM, 0);
 
-    if (setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &(int){ 1 }, sizeof(int)) < 0)
+    if (setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &(int) {1}, sizeof(int)) < 0)
         printf("SO_REUSEADDR failed");
 
     memset(self.sin_zero, '\0', sizeof(self.sin_zero));
@@ -22,15 +22,16 @@ int init_child_server(Server data) {
     self.sin_addr.s_addr = inet_addr("127.0.0.1"); //INADDR_ANY
     //self.sin_addr.s_addr = INADDR_ANY;
 
-    bind(sockfd, (struct sockaddr*)&self, sizeof(self));
+    bind(sockfd, (struct sockaddr *) &self, sizeof(self));
 
-    listen(sockfd, 4);
+    listen(sockfd, MAX_CLIENTS);
 
     data.running = 1;
 
     Client clients[MAX_CLIENTS];
     init_clients(clients, MAX_CLIENTS);
-
+    // Creating client threads
+    // TODO Make client threads better
     pthread_t client_threads[MAX_CLIENTS];
 
     for (int i = 0; i < MAX_CLIENTS; i++)
@@ -51,35 +52,48 @@ int init_child_server(Server data) {
 
     int n = 0;
     int r = 1;
-    while (r)
-    {
+    while (r) {
         addr_size = sizeof(client_addr);
 
-        clientfd = accept(sockfd, (struct sockaddr*)&client_addr, &addr_size);
+        clientfd = accept(sockfd, (struct sockaddr *) &client_addr, &addr_size);
 
         if (clientfd != -1) {
 
-            printf("Server %d got a connection! \n", data.server_id);
+            //printf("Server %d got a connection! \n", data.server_id);
+            // Locks other connections out
+            data.ready_for_new_client = 0;
+            send_packet(41, data.server_id, data.ready_for_new_client, data.fd_master[1]);
 
-            clients[n++] = create_client(clientfd);
+            clients[n] = create_client(n, clientfd);
+            n++;
 
             data.nr_of_clients++;
 
             send_packet(11, data.server_id, data.nr_of_clients, data.fd_master[1]);
-            printf("Server %d players: %d\n", data.server_id, data.nr_of_clients);
+            //printf("Server %d players: %d\n", data.server_id, data.nr_of_clients);
+            // Open up for other connections
+            data.ready_for_new_client = 1;
+            send_packet(41, data.server_id, data.ready_for_new_client, data.fd_master[1]);
+
+            if (data.nr_of_clients > MAX_CLIENTS) {
+                printf("OVERFULL\n");
+                exit(-1);
+            }
         }
     }
+
+    return 0;
 }
 
 void init_servers(Server *servers, int len, int port) {
-    for (int i=0; i < len; i++)
-    {
+    for (int i = 0; i < len; i++) {
         pipe(servers[i].fd_master);
         pipe(servers[i].fd_child);
         servers[i].server_id = i;
         servers[i].nr_of_clients = 0;
         servers[i].running = 0;
-        servers[i].port = port + (i+1);
+        servers[i].port = port + (i + 1);
+        servers[i].ready_for_new_client = 1;
     }
 }
 
@@ -89,20 +103,23 @@ int calculate_best_server(Server *servers, int len) {
     int temp_points = 0;
     int clients = 0;
     int running = 0;
+    int ready = 1;
 
-    for(int i=0; i < len; i++)
-    {
+    for (int i = 0; i < len; i++) {
+        //send_packet(40, i, 0, servers[i].fd_child[1]);
+
         if (server_is_full(servers[i]))
             continue;
 
         clients = servers[i].nr_of_clients;
         running = servers[i].running;
+        //ready = servers[i].ready_for_new_client;
 
         temp_points = points;
         //points = clients + running;
         points = clients;
 
-        if (points == MAX_CLIENTS || running == 0)
+        if (points == MAX_CLIENTS || running == 0 || ready == 0)
             continue;
 
         if (points >= temp_points)
@@ -113,32 +130,32 @@ int calculate_best_server(Server *servers, int len) {
 }
 
 void *thread_read_server(void *args) {
-    ThreadServerComm *reader = (ThreadServerComm*) args;
+    ThreadServerComm *reader = (ThreadServerComm *) args;
 
     close(reader->server->fd_child[1]);
 
     int running = 1;
-    while(running)
-    {
-        read(reader->server->fd_child[0], &reader->packet->data, sizeof(int)*PACKET_LENGTH);
+    while (running) {
+        read(reader->server->fd_child[0], &reader->packet->data, sizeof(int) * PACKET_LENGTH);
         handle_packet(reader->packet, reader->server);
 
-        usleep(16000);
+        //usleep(16000);
     }
 
     return NULL;
 }
 
 void *thread_write_server(void *args) {
-    ThreadServerComm *writer = (ThreadServerComm*) args;
+    ThreadServerComm *writer = (ThreadServerComm *) args;
 
     close(writer->server->fd_master[0]);
 
     int running = 1;
-    while(running)
-    {
-        write(writer->server->fd_master[1], &writer->packet->data, sizeof(int)*PACKET_LENGTH);
-
+    while (running) {
+        if (writer->packet->data[0] != 0) // If there actually is a packet to send
+        {
+            write(writer->server->fd_master[1], &writer->packet->data, sizeof(int) * PACKET_LENGTH);
+        }
         usleep(16000);
     }
 
@@ -164,7 +181,7 @@ int create_child_server(Server data) {
             exit(-1);
 
         case 0:
-            printf("Server Created\n");
+            //printf("Server Created\n");
             init_child_server(data);
 
             exit(0);
@@ -176,11 +193,18 @@ int create_child_server(Server data) {
 
 void *thread_client(void *args) {
 
-    Client *c = (Client*)args;
+    Client *c = (Client *) args;
 
     int running = 1;
-    while(running)
-    {
+    while (running) {
+        if (c->connected) {
+            printf("Im here\n");
+            char *text;
+            //recv(c->socket, &text, 1, 0);
+            read(c->socket, &text, 4);
+            printf("Client said: %s\n", text);
+            c->connected = 0;
+        }
         usleep(16000);
     }
 
