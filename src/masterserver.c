@@ -7,7 +7,7 @@ void master_server() {
 
     Server server_list[NR_OF_SERVERS];
 
-    init_servers(server_list, NR_OF_SERVERS, PORT);
+    init_servers(server_list, NR_OF_SERVERS, MASTER_PORT);
     init_child_handler();
 
     int sockfd, clientfd;
@@ -22,7 +22,7 @@ void master_server() {
 
     memset(self.sin_zero, '\0', sizeof(self.sin_zero));
     self.sin_family = AF_INET;
-    self.sin_port = htons(PORT);
+    self.sin_port = htons(MASTER_PORT);
     self.sin_addr.s_addr = inet_addr("127.0.0.1"); //INADDR_ANY
     //self.sin_addr.s_addr = INADDR_ANY;
 
@@ -57,8 +57,6 @@ void master_server() {
 
         if (clientfd != -1) {
 
-            //printf("Client Connected!\n");
-
             redirect_new_client(clientfd, server_list);
             close(clientfd);
         }
@@ -82,7 +80,6 @@ int redirect_new_client(int clientfd, Server *server_list) {
 
             start_server = i;
             server_list[i].running = 1;
-            server_list[i].clients[0] = clientfd;
             server_list[i].nr_of_clients = 0;
             create_child_server(server_list[i]);
             send(clientfd, &server_list[i].port, sizeof(int), 0);
@@ -107,20 +104,6 @@ void init_child_handler() {
     }
 }
 
-void update_server_list(Server *server_list, int len) {
-    for (int i = 0; i < len; i++) {
-        printf("Server %d, running = %d\n", server_list[i].server_id, server_list[i].running);
-        Server s;
-
-        close(server_list[i].fd_master[1]);
-        read(server_list[i].fd_master[0], &s, sizeof(s));
-
-        server_list[s.server_id] = s;
-
-        printf("Updated server %d, running = %d\n", server_list[i].server_id, server_list[i].running);
-    }
-}
-
 void *thread_read_servers(void *s) {
     ThreadComm *reader = (ThreadComm *) s;
     Packet packet;
@@ -133,11 +116,8 @@ void *thread_read_servers(void *s) {
             continue;
         }
 
-        read(reader->server_list[reader->id].fd_master[0], &packet.data, sizeof(int) * PACKET_LENGTH);
+        read(reader->server_list[reader->id].fd_master[0], &packet.data, sizeof(int) * COMMUNICATION_LENGTH);
         handle_communication(&packet, &reader->server_list[reader->id]);
-
-        //usleep(16000);
-        //printf("%d\n", packet.data[0]);
     }
     return NULL;
 }

@@ -5,7 +5,7 @@
 #include "headers/communication.h"
 
 Packet packet_nullify(Packet packet) {
-    for (int i = 0; i < PACKET_LENGTH; i++) {
+    for (int i = 0; i < COMMUNICATION_LENGTH; i++) {
         packet.data[i] = 0;
     }
     return packet;
@@ -94,8 +94,11 @@ void send_packet(int packet, int server_id, int opt, int fd) {
     p.data[1] = server_id;
     p.data[2] = opt;
 
-    write(fd, &p.data, sizeof(int) * PACKET_LENGTH);
+    write(fd, &p.data, sizeof(int) * COMMUNICATION_LENGTH);
 }
+
+
+
 
 
 

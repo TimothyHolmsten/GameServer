@@ -6,9 +6,10 @@
 #define GAMESERVER_STRUCTS_H
 
 #include "defines.h"
+#include <pthread.h>
 
 typedef struct Packet {
-    int data[PACKET_LENGTH];
+    int data[COMMUNICATION_LENGTH];
 } Packet;
 
 typedef struct Server {
@@ -28,6 +29,15 @@ typedef struct Client {
     int connected;
     int socket;
 } Client;
+
+typedef struct ThreadClient {
+    Client *client;
+    int counter;
+    pthread_mutex_t mutex_lock;
+    int id;
+    char broadcast[1024];
+    Server *server_data;
+} ThreadClient;
 
 typedef struct ThreadServerComm {
     Server *server;

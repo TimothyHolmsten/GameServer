@@ -11,4 +11,6 @@ Client create_client(int id, int socket);
 
 void init_clients(Client *clients, int n);
 
+void init_client_threads(Client *clients, int n);
+
 #endif //GAMESERVER_CLIENT_H

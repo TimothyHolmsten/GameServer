@@ -34,8 +34,18 @@ int init_child_server(Server data) {
     // TODO Make client threads better
     pthread_t client_threads[MAX_CLIENTS];
 
-    for (int i = 0; i < MAX_CLIENTS; i++)
-        pthread_create(&client_threads[i], NULL, thread_client, &clients[i]);
+    ThreadClient tc;
+    tc.counter = 0;
+    tc.id = 0;
+    tc.server_data = &data;
+    pthread_mutex_init(&tc.mutex_lock, NULL);
+    /*
+    for (int i = 0; i < MAX_CLIENTS; i++) {
+        tc.client = &clients[i];
+        //pthread_create(&client_threads[i], NULL, thread_client, &clients[i]);
+        pthread_create(&client_threads[i], NULL, thread_client, &tc);
+        usleep(16000);
+    }*/
 
     pthread_t r_thread, w_thread;
     Packet packet;
@@ -50,7 +60,6 @@ int init_child_server(Server data) {
     pthread_create(&r_thread, NULL, thread_read_server, &thread_args);
     pthread_create(&w_thread, NULL, thread_write_server, &thread_args);
 
-    int n = 0;
     int r = 1;
     while (r) {
         addr_size = sizeof(client_addr);
@@ -59,13 +68,24 @@ int init_child_server(Server data) {
 
         if (clientfd != -1) {
 
-            //printf("Server %d got a connection! \n", data.server_id);
+            pthread_mutex_lock(&tc.mutex_lock);
+
             // Locks other connections out
             data.ready_for_new_client = 0;
             send_packet(41, data.server_id, data.ready_for_new_client, data.fd_master[1]);
 
-            clients[n] = create_client(n, clientfd);
-            n++;
+            int free_spot = find_free_client(clients, MAX_CLIENTS);
+
+            if (free_spot < 0) {
+                printf("Cannot find a free spot for the client\n");
+                data.ready_for_new_client = 1;
+                send_packet(41, data.server_id, data.ready_for_new_client, data.fd_master[1]);
+                pthread_mutex_unlock(&tc.mutex_lock);
+                continue;
+            }
+            clients[free_spot] = create_client(free_spot, clientfd);
+            tc.client = &clients[free_spot];
+            pthread_create(&client_threads[free_spot], NULL, thread_client, &tc);
 
             data.nr_of_clients++;
 
@@ -74,6 +94,8 @@ int init_child_server(Server data) {
             // Open up for other connections
             data.ready_for_new_client = 1;
             send_packet(41, data.server_id, data.ready_for_new_client, data.fd_master[1]);
+
+            pthread_mutex_unlock(&tc.mutex_lock);
 
             if (data.nr_of_clients > MAX_CLIENTS) {
                 printf("OVERFULL\n");
@@ -103,17 +125,17 @@ int calculate_best_server(Server *servers, int len) {
     int temp_points = 0;
     int clients = 0;
     int running = 0;
-    int ready = 1;
+    int ready = 0;
 
     for (int i = 0; i < len; i++) {
-        //send_packet(40, i, 0, servers[i].fd_child[1]);
+        send_packet(40, i, 0, servers[i].fd_child[1]);
 
         if (server_is_full(servers[i]))
             continue;
 
         clients = servers[i].nr_of_clients;
         running = servers[i].running;
-        //ready = servers[i].ready_for_new_client;
+        ready = servers[i].ready_for_new_client;
 
         temp_points = points;
         //points = clients + running;
@@ -136,7 +158,7 @@ void *thread_read_server(void *args) {
 
     int running = 1;
     while (running) {
-        read(reader->server->fd_child[0], &reader->packet->data, sizeof(int) * PACKET_LENGTH);
+        read(reader->server->fd_child[0], &reader->packet->data, sizeof(int) * COMMUNICATION_LENGTH);
         handle_communication(reader->packet, reader->server);
 
         //usleep(16000);
@@ -154,7 +176,7 @@ void *thread_write_server(void *args) {
     while (running) {
         if (writer->packet->data[0] != 0) // If there actually is a packet to send
         {
-            write(writer->server->fd_master[1], &writer->packet->data, sizeof(int) * PACKET_LENGTH);
+            write(writer->server->fd_master[1], &writer->packet->data, sizeof(int) * COMMUNICATION_LENGTH);
         }
         usleep(16000);
     }
@@ -181,7 +203,6 @@ int create_child_server(Server data) {
             exit(-1);
 
         case 0:
-            //printf("Server Created\n");
             init_child_server(data);
 
             exit(0);
@@ -191,22 +212,58 @@ int create_child_server(Server data) {
     return 0;
 }
 
+int find_free_client(Client *clients, int len) {
+
+    for (int i = 0; i < len; i++)
+        if (clients[i].connected == 0)
+            return i;
+
+    return -1;
+}
+
 void *thread_client(void *args) {
 
-    Client *c = (Client *) args;
+    //Client *c = (Client *) args;
+    ThreadClient *tc = (ThreadClient *) args;
 
-    int running = 1;
-    while (running) {
-        if (c->connected) {
-            printf("Im here\n");
-            char *text;
-            //recv(c->socket, &text, 1, 0);
-            read(c->socket, &text, 4);
-            printf("Client said: %s\n", text);
-            c->connected = 0;
+    pthread_mutex_lock(&tc->mutex_lock);
+    int my_id = tc->id;
+    Client *my_client = tc->client;
+    tc->id++;
+    pthread_mutex_unlock(&tc->mutex_lock);
+
+    char text[1024];
+    memset(text, 0, sizeof(text));
+
+    // While the client is connected do this
+    while (recv(my_client->socket, &text, 1024, 0)) {
+        if (strlen(text) > 0) {
+            printf("Client %d said: %s\n", my_client->id, text);
+            char new_text[1024] = "Echo ";
+            strcat(new_text, text);
+            send(my_client->socket, new_text, 1024, 0);
+            tc->broadcast[0] = 'l';
+            tc->broadcast[1] = '\0';
+            memset(text, 0, sizeof(text));
         }
-        usleep(16000);
     }
+
+
+    pthread_mutex_lock(&tc->mutex_lock);
+    // Client disconnected
+    my_client->connected = 0;
+    my_client->socket = -1;
+    tc->server_data->nr_of_clients--;
+    // Update masterserver with how many clients there are on the server
+    send_packet(11,
+                tc->server_data->server_id,
+                tc->server_data->nr_of_clients,
+                tc->server_data->fd_master[1]
+    );
+
+    pthread_mutex_unlock(&tc->mutex_lock);
+
+    pthread_exit(NULL);
 
     return NULL;
 }

@@ -16,10 +16,12 @@ Client create_client(int id, int socket) {
 
 void init_clients(Client *clients, int n) {
     for (int i = 0; i < n; i++) {
-        clients[i].id = 0;
+        clients[i].id = i;
+        clients[i].socket = -1;
         clients[i].connected = 0;
     }
 }
+
 
 
 

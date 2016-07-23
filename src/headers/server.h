@@ -28,6 +28,8 @@ int server_is_full(Server server);
 
 int server_is_running(Server server);
 
+int find_free_client(Client *clients, int len);
+
 void *thread_read_server(void *args);
 
 void *thread_write_server(void *args);
