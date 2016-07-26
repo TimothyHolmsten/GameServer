@@ -84,7 +84,10 @@ int init_child_server(Server data) {
                 continue;
             }
             clients[free_spot] = create_client(free_spot, clientfd);
+            data.clients[free_spot] = clients[free_spot].socket;
+
             tc.client = &clients[free_spot];
+            // Creating client read thread
             pthread_create(&client_threads[free_spot], NULL, thread_client, &tc);
 
             data.nr_of_clients++;
@@ -238,20 +241,17 @@ void *thread_client(void *args) {
     // While the client is connected do this
     while (recv(my_client->socket, &text, 1024, 0)) {
         if (strlen(text) > 0) {
-            printf("Client %d said: %s\n", my_client->id, text);
-            char new_text[1024] = "Echo ";
-            strcat(new_text, text);
-            send(my_client->socket, new_text, 1024, 0);
-            tc->broadcast[0] = 'l';
-            tc->broadcast[1] = '\0';
+            for(int i = 0; i < MAX_CLIENTS; i++)
+                send(tc->server_data->clients[i], text, strlen(text), 0);
+
             memset(text, 0, sizeof(text));
         }
     }
 
-
     pthread_mutex_lock(&tc->mutex_lock);
     // Client disconnected
     my_client->connected = 0;
+    close(my_client->socket);
     my_client->socket = -1;
     tc->server_data->nr_of_clients--;
     // Update masterserver with how many clients there are on the server

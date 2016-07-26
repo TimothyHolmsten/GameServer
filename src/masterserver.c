@@ -56,7 +56,6 @@ void master_server() {
         clientfd = accept(sockfd, (struct sockaddr *) &client_addr, &addr_size);
 
         if (clientfd != -1) {
-
             redirect_new_client(clientfd, server_list);
             close(clientfd);
         }
@@ -66,9 +65,13 @@ void master_server() {
 int redirect_new_client(int clientfd, Server *server_list) {
     int server = calculate_best_server(server_list, NR_OF_SERVERS);
     int start_server = -1;
+    char port[5];
 
     if (server != -1) {
-        send(clientfd, &server_list[server].port, sizeof(int), 0);
+        // Send the port to the client
+        sprintf(port, "%d", server_list[server].port);
+        //send(clientfd, &server_list[server].port, sizeof(int), 0);
+        send(clientfd, &port, strlen(port), 0);
 
         return 0;
     }
@@ -82,7 +85,10 @@ int redirect_new_client(int clientfd, Server *server_list) {
             server_list[i].running = 1;
             server_list[i].nr_of_clients = 0;
             create_child_server(server_list[i]);
-            send(clientfd, &server_list[i].port, sizeof(int), 0);
+            // Send the port to the client
+            sprintf(port, "%d", server_list[i].port);
+            //send(clientfd, &server_list[i].port, sizeof(int), 0);
+            send(clientfd, &port, strlen(port), 0);
             break;
         }
     }
