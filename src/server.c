@@ -2,7 +2,6 @@
 // Created by Timothy Friberg Holmsten on 30/05/16.
 //
 
-#include <signal.h>
 #include "headers/server.h"
 
 int init_child_server(Server data) {
@@ -246,7 +245,7 @@ void *thread_client(void *args) {
     Client *my_client = tc->client;
     tc->id++;
     pthread_mutex_unlock(&tc->mutex_lock);
-
+    /*
     char text[1024];
     memset(text, 0, sizeof(text));
 
@@ -260,7 +259,8 @@ void *thread_client(void *args) {
 
             memset(text, 0, sizeof(text));
         }
-    }
+    }*/
+    play(tc, my_client);
 
     pthread_mutex_lock(&tc->mutex_lock);
     // Client disconnected

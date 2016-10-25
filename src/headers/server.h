@@ -15,6 +15,8 @@
 #include "communication.h"
 #include "structs.h"
 #include "client.h"
+#include "liarsgame.h"
+#include <signal.h>
 
 int init_child_server(Server data);
 
