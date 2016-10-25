@@ -28,6 +28,8 @@ int packet_get_server_ready_for_new_client(Packet *packet, Server *server);
 
 int packet_set_server_ready_for_new_client(Packet *packet, Server *server);
 
+int packet_kill_server(Packet *packet, Server *server);
+
 void send_packet(int packet, int server_id, int opt, int fd);
 
 #endif //GAMESERVER_PACKET_H

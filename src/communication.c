@@ -2,6 +2,7 @@
 // Created by Timothy Friberg Holmsten on 08/06/16.
 //
 
+#include <signal.h>
 #include "headers/communication.h"
 
 Packet packet_nullify(Packet packet) {
@@ -39,6 +40,10 @@ int handle_communication(Packet *packet, Server *server) {
         return packet_get_server_ready_for_new_client(packet, server);
     if (type == 41)
         return packet_set_server_ready_for_new_client(packet, server);
+
+    // Kill server
+    if (type == 50)
+        return packet_kill_server(packet, server);
 
     return -1;
 }
@@ -84,6 +89,13 @@ int packet_get_running(Packet *packet, Server *server) {
 
 int packet_set_running(Packet *packet, Server *server) {
     server->running = packet->data[2];
+    packet->data[0] = 0;
+    return 0;
+}
+
+int packet_kill_server(Packet *packet, Server *server) {
+    server->running = 0;
+    kill(server->pid, SIGKILL);
     packet->data[0] = 0;
     return 0;
 }

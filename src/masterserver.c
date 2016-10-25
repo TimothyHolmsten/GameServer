@@ -23,7 +23,7 @@ void master_server() {
     memset(self.sin_zero, '\0', sizeof(self.sin_zero));
     self.sin_family = AF_INET;
     self.sin_port = htons(MASTER_PORT);
-    self.sin_addr.s_addr = inet_addr("127.0.0.1"); //INADDR_ANY
+    self.sin_addr.s_addr = inet_addr(HOST); //INADDR_ANY
     //self.sin_addr.s_addr = INADDR_ANY;
 
     bind(sockfd, (struct sockaddr *) &self, sizeof(self));

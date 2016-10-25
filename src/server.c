@@ -2,6 +2,7 @@
 // Created by Timothy Friberg Holmsten on 30/05/16.
 //
 
+#include <signal.h>
 #include "headers/server.h"
 
 int init_child_server(Server data) {
@@ -19,7 +20,7 @@ int init_child_server(Server data) {
     memset(self.sin_zero, '\0', sizeof(self.sin_zero));
     self.sin_family = AF_INET;
     self.sin_port = htons(data.port);
-    self.sin_addr.s_addr = inet_addr("127.0.0.1"); //INADDR_ANY
+    self.sin_addr.s_addr = inet_addr(HOST); //INADDR_ANY
     //self.sin_addr.s_addr = INADDR_ANY;
 
     bind(sockfd, (struct sockaddr *) &self, sizeof(self));
@@ -27,6 +28,8 @@ int init_child_server(Server data) {
     listen(sockfd, MAX_CLIENTS);
 
     data.running = 1;
+
+    data.pid = getpid();
 
     Client clients[MAX_CLIENTS];
     init_clients(clients, MAX_CLIENTS);
@@ -106,8 +109,6 @@ int init_child_server(Server data) {
             }
         }
     }
-
-    return 0;
 }
 
 void init_servers(Server *servers, int len, int port) {
@@ -224,6 +225,17 @@ int find_free_client(Client *clients, int len) {
     return -1;
 }
 
+void check_if_server_has_clients(Server *server) {
+    if (server->nr_of_clients == 0) {
+        sleep(3);
+        if (server->nr_of_clients == 0) {
+            send_packet(21, server->server_id, 0, server->fd_master[1]);
+            kill(getpid(), SIGKILL);
+        }
+
+    }
+}
+
 void *thread_client(void *args) {
 
     //Client *c = (Client *) args;
@@ -241,8 +253,10 @@ void *thread_client(void *args) {
     // While the client is connected do this
     while (recv(my_client->socket, &text, 1024, 0)) {
         if (strlen(text) > 0) {
-            for(int i = 0; i < MAX_CLIENTS; i++)
-                send(tc->server_data->clients[i], text, strlen(text), 0);
+            for (int i = 0; i < MAX_CLIENTS; i++) {
+                if (i != my_client->id)
+                    send(tc->server_data->clients[i], text, strlen(text), 0);
+            }
 
             memset(text, 0, sizeof(text));
         }
@@ -260,6 +274,7 @@ void *thread_client(void *args) {
                 tc->server_data->nr_of_clients,
                 tc->server_data->fd_master[1]
     );
+    check_if_server_has_clients(tc->server_data);
 
     pthread_mutex_unlock(&tc->mutex_lock);
 

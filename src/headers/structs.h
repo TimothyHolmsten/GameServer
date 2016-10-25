@@ -22,6 +22,7 @@ typedef struct Server {
     int server_id;
     int running;
     int ready_for_new_client;
+    int pid;
 } Server;
 
 typedef struct Client {
